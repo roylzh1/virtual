@@ -4,7 +4,7 @@
 			<!--侧栏-->
 			<el-aside width="200px">
 				<el-menu
-					default-active="2"
+					default-active="1"
 					class="el-menu-vertical-demo"
 					@select="handleSelect"
 				>
@@ -118,120 +118,79 @@
 						</div>
 					</div>
 					<!--淹没分析工具栏-->
-					<div class="infoview" v-if="ifShowFlood">
-						<table id="paramView" class="mars-table">
-							<tr>
-								<td class="nametd">分析区域</td>
-								<td>
-									<button
-										type="button"
-										id="btnDrawExtent"
-										class="btn btn-default"
-										@click="btnDrawExtent"
-									>
-										添加矩形
-									</button>
-									<button
-										type="button"
-										id="btnDraw"
-										class="btn btn-default"
-										@click="btnDraw"
-									>
-										添加多边形
-									</button>
-									<button
-										type="button"
-										id="clearDraw"
-										class="btn btn-default"
-										@click="clearDraw"
-									>
-										清除
-									</button>
-								</td>
-							</tr>
-							<tr>
-								<td class="nametd">最低海拔(米)</td>
-								<td>
-									<input
-										id="minHeight"
-										v-model="flood.minLevel"
-										type="number"
-										class="form-control"
-									/>
-								</td>
-							</tr>
-							<tr>
-								<td class="nametd">最高海拔(米)</td>
-								<td>
-									<input
-										id="maxHeight"
-										v-model="flood.maxLevel"
-										type="number"
-										class="form-control"
-									/>
-								</td>
-							</tr>
-							<tr>
-								<td class="nametd">淹没速度(米/秒)</td>
-								<td>
-									<input
-										id="speed"
-										v-model="flood.speed"
-										type="number"
-										class="form-control"
-									/>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="2">
-									<button
-										type="button"
-										id="begin"
-										class="btn btn-primary"
-										@click="begin"
-									>
-										开始分析
-									</button>
-								</td>
-							</tr>
-						</table>
-
-						<div id="resultView" style="display: none; text-align: left">
-							<div class="rowview clearfix">
-								<span>高度选择:</span>
-								<input
-									id="range_currHeight"
-									title="时间"
-									type="range"
-									min="0"
-									max="1000"
-									step="0.1"
-									value="0"
-								/>
-							</div>
-							<div class="rowview clearfix">
-								<span>当前高度:</span><span id="lbl_nowHeight"></span>
+					<div v-if="isFlood" class="flood-box">
+						<div v-show="!isShow">
+							<div class="f-mb">
+								<div>
+									<span>分析区域</span>
+									<button @click="btnDrawExtent">绘制矩形</button>
+									<button @click="btnDraw">绘制多边形</button>
+									<button @click="clearDraw">清除</button>
+								</div>
 							</div>
 
-							<input
-								id="btn_start"
-								type="button"
-								class="btn btn-primary"
-								value="暂停"
-							/>
-							<button type="button" id="clear" class="btn btn-primary">
-								返回
-							</button>
+							<div class="f-mb">
+								<a-space>
+									<span>最低海拔</span>
+									<input v-model="formState.minHeight" :step="1" />米
+								</a-space>
+							</div>
 
-							<div class="checkbox checkbox-info checkbox-inline">
-								<input
-									type="checkbox"
-									id="showElse"
-									value="this"
-									name="jiaodu"
-									checked
-								/>
-								<label for="showElse">显示非淹没区域</label>
+							<div class="f-mb">
+								<a-space>
+									<span>最高海拔</span>
+									<input v-model="formState.maxHeight" :step="1" />米
+								</a-space>
+							</div>
+							<div class="f-mb">
+								<div>
+									<span>淹没速度</span>
+									<input v-model="formState.speed" :step="1" />米/秒
+								</div>
+							</div>
+							<div class="f-tac">
+								<button @click="begin">开始分析</button>
+							</div>
+						</div>
+
+						<div v-show="isShow">
+							<div class="f-mb">
+								<a-space>
+									<span>高度选择</span>
+									<a-slider
+										tooltipPlacement="bottom"
+										v-model:value="formState.height"
+										@change="onChangeHeight"
+										:min="formState.minHeight"
+										:max="formState.maxHeight"
+										:step="1"
+									/>
+								</a-space>
+							</div>
+
+							<div class="f-mb">
+								<a-space>
+									<span>淹没颜色:</span>
+									<mars-color-picker
+										v-model:value="floodColor"
+										@change="onChangeColor"
+									/>
+									<span>当前高度:{{ formState.height }}</span>
+								</a-space>
+							</div>
+
+							<div class="f-tac">
+								<a-space>
+									<mars-button @click="startPlay">{{
+										isStart ? '暂停' : '播放'
+									}}</mars-button>
+									<mars-button @click="goBack">返回</mars-button>
+									<a-checkbox
+										v-model:checked="formState.enabledShowElse"
+										@change="onChangeElse"
+										>显示非淹没区域</a-checkbox
+									>
+								</a-space>
 							</div>
 						</div>
 					</div>
@@ -241,26 +200,40 @@
 	</div>
 </template>
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, onUnmounted } from 'vue';
+import { ElMessage } from 'element-plus';
 import 'mars3d-cesium/Build/Cesium/Widgets/widgets.css'; //依赖的cesium库本身css
 import 'mars3d/dist/mars3d.css';
 import * as mars3d from 'mars3d';
 let map;
+const eventTarget = new mars3d.BaseClass(); // 事件对象，用于抛出事件到面板中
 let threeDTilesLayer; //第一次加载的模型
 let mapSplit; //卷帘对比图层
 let measure; //量算组件
 let floodByMaterial; //淹没组件
 const ifShowMeasure = ref(false);
-const ifShowFlood = ref(true);
-const flood = reactive({
-	minLevel: 0,
-	maxLevel: 0,
-	speed: 0,
+const formState = reactive({
+	minHeight: 0,
+	maxHeight: 0,
+	height: 0,
+	speed: 80,
+	enabledShowElse: true,
 });
+const isFlood = ref(false);
+const isStart = ref(true);
+const isShow = ref(false);
+const floodColor = ref('rgba(0, 123, 230, 0.5)');
 onMounted(() => {
 	map = initMap();
 	threeDTilesLayer = queryTilesetData();
 	addLayer(threeDTilesLayer);
+	eventTarget.on('heightChange', e => {
+		isShow.value = true;
+		formState.height = Math.ceil(e.height);
+	});
+});
+onUnmounted(() => {
+	map = null;
 });
 //初始化地图
 function initMap() {
@@ -320,7 +293,7 @@ function queryTilesetData() {
 	const tiles3dLayer = new mars3d.layer.TilesetLayer({
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
-		maximumMemoryUsage: 812,
+		maximumMemoryUsage: 512,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
@@ -331,6 +304,9 @@ function queryTilesetData() {
 			heading: 7,
 			pitch: -29,
 		},
+    position: {
+					alt: 79,
+				},
 		preferLeaves: false,
 		flyTo: true, //false TODO:交付记得改回来
 		popup: 'all',
@@ -350,6 +326,7 @@ function removeLayer(layer) {
 function handleSelect(key, keyPath) {
 	console.log(key, keyPath);
 	ifShowMeasure.value = false;
+	isFlood.value = false;
 	//移除原本的地图,切换成卷帘
 	if (key == '2') {
 		removeLayer(threeDTilesLayer);
@@ -364,6 +341,10 @@ function handleSelect(key, keyPath) {
 	} else if (key == '3') {
 		startMeasure();
 		ifShowMeasure.value = true;
+		return;
+	} else if (key == '4') {
+		isFlood.value = true;
+		initFlood();
 		return;
 	}
 }
@@ -412,7 +393,7 @@ function contrast() {
 				position: {
 					lat: 28.267959,
 					lng: 113.062431,
-					alt: 79.8,
+					alt: 79,
 				},
 				preferLeaves: false,
 				maximumMemoryUsage: 155,
@@ -507,17 +488,14 @@ function measureSurfaceeArea() {
 function measureHeight() {
 	measure.height();
 }
-
 // 三角测量
 function measureTriangleHeight() {
 	measure.heightTriangle();
 }
-
 // 方位角
 function measureAngle() {
 	measure.angle();
 }
-
 // 坐标测量
 function measurePoint() {
 	measure.point();
@@ -525,9 +503,10 @@ function measurePoint() {
 function removeAll() {
 	measure.clear();
 }
-function startFlood() {
+function initFlood() {
+	// 基于地球材质，可以多个区域
 	floodByMaterial = new mars3d.thing.FloodByMaterial({
-		color: '#0033ff91', // 淹没颜色
+		color: 'rgba(0, 123, 230, 0.5)', // 淹没颜色
 	});
 	map.addThing(floodByMaterial);
 
@@ -536,7 +515,7 @@ function startFlood() {
 	});
 
 	floodByMaterial.on(mars3d.EventType.change, function (e) {
-		var height = e.height;
+		const height = e.height;
 		eventTarget.fire('heightChange', { height });
 	});
 
@@ -544,20 +523,22 @@ function startFlood() {
 		console.log('结束分析', e);
 	});
 }
-function btnDrawExtent(callback) {
+// 绘制矩形
+function mapBtnDrawExtent(callback) {
 	clearDraw();
-
 	map.graphicLayer.startDraw({
 		type: 'rectangle',
 		style: {
-			color: '#0033ff91',
+			color: 'rgba(0, 123, 230, 0.5)',
 			// clampToGround: true
 		},
 		success: function (graphic) {
 			// 绘制成功后回调
 			const positions = graphic.getOutlinePositions(false);
+
 			// 更新最大、最小高度值
 			updateHeightRange(graphic, positions, callback);
+
 			// 区域
 			floodByMaterial.addArea(positions);
 		},
@@ -565,13 +546,12 @@ function btnDrawExtent(callback) {
 }
 
 // 绘制多边形
-function btnDraw(callback) {
+function mapBtnDraw(callback) {
 	clearDraw();
-
 	map.graphicLayer.startDraw({
 		type: 'polygon',
 		style: {
-			color: '#0033ff91',
+			color: 'rgba(0, 123, 230, 0.5)',
 			outline: false,
 			// clampToGround: true
 		},
@@ -587,8 +567,6 @@ function btnDraw(callback) {
 
 // 求最大、最小高度值
 function updateHeightRange(graphic, positions, callback) {
-	showLoading();
-
 	// 求最大、最小高度值
 	graphic.show = false; // 会遮挡深度图，所以需要隐藏
 	mars3d.PolyUtil.interPolygonByDepth({ scene: map.scene, positions }).then(
@@ -596,25 +574,21 @@ function updateHeightRange(graphic, positions, callback) {
 			graphic.show = true; // 恢复显示
 			const minHeight = Math.ceil(result.minHeight);
 			const maxHeight = Math.floor(result.maxHeight);
-
 			callback(minHeight, maxHeight);
-			hideLoading();
 		}
 	);
 }
 
 // 开始分析
-function begin() {
+function mapBegin(data) {
 	if (floodByMaterial.length === 0) {
-		globalMsg('请首先绘制分析区域！');
+		ElMessage('请首先绘制分析区域！');
 		return;
 	}
 	map.graphicLayer.clear();
-
-	const minValue = Number(flood.minLevel);
-	const maxValue = Number(flood.maxLevel);
-	const speed = Number(flood.speed);
-
+	const minValue = Number(data.minHeight);
+	const maxValue = Number(data.maxHeight);
+	const speed = Number(data.speed);
 	floodByMaterial.setOptions({
 		minHeight: minValue,
 		maxHeight: maxValue,
@@ -622,46 +596,88 @@ function begin() {
 	});
 	floodByMaterial.start();
 }
-
 // 高度选择
-function onChangeHeight(height) {
+function mapOnChangeHeight(height) {
 	floodByMaterial.height = height;
 }
-
 // 颜色发生改变
-function onChangeColor(color) {
+function mapOnChangeColor(color) {
 	floodByMaterial.color = color;
 }
-
 // 自动播放
-function startPlay() {
+function mapStartPlay() {
 	if (floodByMaterial.isStart) {
 		floodByMaterial.stop();
 	} else {
 		floodByMaterial.start();
 	}
 }
-
 // 是否显示非淹没区域
-function onChangeElse(val) {
+function mapOnChangeElse(val) {
 	floodByMaterial.showElseArea = val;
 }
 
-function clearDraw() {
+function mapClearDraw() {
 	floodByMaterial.clear();
 	map.graphicLayer.clear();
 }
-function changeFloodValue() {
-	if (floodByMaterial.isStart) {
-		floodByMaterial.stop();
-		$('#btn_start').val('自动播放');
-	} else {
-		floodByMaterial.start();
-		$('#btn_start').val('暂停');
-	}
-}
+// 添加矩形
+const btnDrawExtent = () => {
+	mapBtnDrawExtent((min, max) => {
+		formState.minHeight = min;
+		formState.maxHeight = max;
+	});
+};
+// 添加多边形
+const btnDraw = () => {
+	mapBtnDraw((min, max) => {
+		formState.minHeight = Math.ceil(min);
+		formState.maxHeight = Math.ceil(max);
+	});
+};
+const clearDraw = () => {
+	mapClearDraw();
+	formState.minHeight = 0;
+	formState.maxHeight = 0;
+};
+// 开始淹没
+const begin = () => {
+	mapBegin(formState);
+};
+
+// 高度改变
+const onChangeHeight = () => {
+	mapOnChangeHeight(formState.height);
+};
+
+// 颜色修改
+const onChangeColor = e => {
+	mapOnChangeColor(floodColor.value);
+};
+
+// 默认自动播放
+const startPlay = () => {
+	isStart.value = !isStart.value;
+	mapStartPlay();
+};
+
+const goBack = () => {
+	mapClearDraw();
+	formState.minHeight = 0;
+	formState.maxHeight = 0;
+	isShow.value = false;
+	isStart.value = true;
+	formState.enabledShowElse = true;
+};
+
+const onChangeElse = () => {
+	mapOnChangeElse(formState.enabledShowElse);
+};
 </script>
 <style scoped>
+.ant-slider {
+	width: 200px;
+}
 .title {
 	margin-left: 1vw;
 	font-size: 30px;
@@ -724,5 +740,45 @@ function changeFloodValue() {
 	margin: 0 5px;
 	background-color: rgba(0, 0, 0, 0.479);
 	cursor: pointer;
+}
+.flood-box {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	width: 350px;
+}
+.f-mb {
+	color: #fff;
+	padding: 5px;
+	background-color: #383838bd;
+}
+.f-mb button {
+	color: #fff;
+	padding: 5px;
+	margin: 0 5px;
+	border-radius: 5px;
+	border: 0px;
+	background-color: #1371afa6;
+}
+.f-mb input {
+	color: #fff;
+	width: 50px;
+	padding: 5px;
+	margin: 0 5px;
+	border-radius: 5px;
+	border: 0px;
+	background-color: #1371afa6;
+}
+.f-tac {
+	color: #fff;
+	background-color: #383838bd;
+}
+.f-tac button {
+	color: #fff;
+	padding: 5px;
+	margin: 0 5px;
+	border-radius: 5px;
+	border: 0px;
+	background-color: #1371afa6;
 }
 </style>
