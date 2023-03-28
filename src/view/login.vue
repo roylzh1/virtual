@@ -13,9 +13,8 @@
 					label-position="top"
 				>
 					<div class="title">
-            <div style="margin-bottom: 1vh;">碧桂园园区</div>
-          <div style="margin-bottom: 1vh;">虚拟仿真</div>
-          <div>辅助决策系统</div>
+            <div style="margin-bottom: 1vh;letter-spacing: 2px;">碧桂园园区</div>
+          <div style="margin-top: 1vh;letter-spacing: 1px;">违建决策系统</div>
         </div>
 					<el-form-item label="用户名" prop="userName">
 						<el-input v-model="ruleForm.userName" autocomplete="off" />
@@ -85,7 +84,8 @@ const submitForm = async formEl => {
 	align-items: center;
 	height: 100vh;
 	width: 100vw;
-  background-color: rgb(151, 88, 88);
+  background-image: url('/600x450x98c.jpg');
+  background-size: cover;
 }
 .login-main {
 	display: flex;
