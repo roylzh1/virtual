@@ -155,42 +155,31 @@
 
 						<div v-show="isShow">
 							<div class="f-mb">
-								<a-space>
 									<span>高度选择</span>
-									<a-slider
+									<el-slider
 										tooltipPlacement="bottom"
-										v-model:value="formState.height"
+										v-model="formState.height"
 										@change="onChangeHeight"
 										:min="formState.minHeight"
 										:max="formState.maxHeight"
 										:step="1"
 									/>
-								</a-space>
 							</div>
 
 							<div class="f-mb">
-								<a-space>
-									<span>淹没颜色:</span>
-									<mars-color-picker
-										v-model:value="floodColor"
-										@change="onChangeColor"
-									/>
-									<span>当前高度:{{ formState.height }}</span>
-								</a-space>
+									<span>当前高度:{{ formState.height }}</span>							
 							</div>
 
 							<div class="f-tac">
-								<a-space>
-									<mars-button @click="startPlay">{{
+									<button @click="startPlay">{{
 										isStart ? '暂停' : '播放'
-									}}</mars-button>
-									<mars-button @click="goBack">返回</mars-button>
-									<a-checkbox
-										v-model:checked="formState.enabledShowElse"
+									}}</button>
+									<button @click="goBack">返回</button>
+									<el-checkbox 
+                  label="显示全景"
+										v-model="formState.enabledShowElse"
 										@change="onChangeElse"
-										>显示非淹没区域</a-checkbox
-									>
-								</a-space>
+										/>							
 							</div>
 						</div>
 					</div>
@@ -339,10 +328,17 @@ function handleSelect(key, keyPath) {
 		addLayer(threeDTilesLayer);
 		return;
 	} else if (key == '3') {
+    if (mapSplit != null) {
+			map.removeControl(mapSplit, true);
+		}
 		startMeasure();
 		ifShowMeasure.value = true;
 		return;
 	} else if (key == '4') {
+    if (mapSplit != null) {
+			map.removeControl(mapSplit, true);
+		}
+    removeLayer(threeDTilesLayer);
 		isFlood.value = true;
 		initFlood();
 		return;
