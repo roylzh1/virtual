@@ -24,13 +24,17 @@
 						<el-icon style="vertical-align: middle"><location /></el-icon>
 						<span>淹没分析</span>
 					</el-menu-item>
+					<el-menu-item index="5">
+						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<span>通视分析</span>
+					</el-menu-item>
 				</el-menu>
 			</el-aside>
 			<el-container>
 				<!--导航栏-->
 				<el-header class="header">
 					<el-tag effect="dark" size="large" round>欢迎回来: roy</el-tag>
-					<div class="title">碧桂园园区违建决策系统</div>
+					<div class="title">虚拟湘龙花园</div>
 				</el-header>
 				<!--地图-->
 				<el-main class="main">
@@ -155,32 +159,67 @@
 
 						<div v-show="isShow">
 							<div class="f-mb">
-									<span>高度选择</span>
-									<el-slider
-										tooltipPlacement="bottom"
-										v-model="formState.height"
-										@change="onChangeHeight"
-										:min="formState.minHeight"
-										:max="formState.maxHeight"
-										:step="1"
-									/>
+								<span>高度选择</span>
+								<el-slider
+									tooltipPlacement="bottom"
+									v-model="formState.height"
+									@change="onChangeHeight"
+									:min="formState.minHeight"
+									:max="formState.maxHeight"
+									:step="1"
+								/>
 							</div>
 
 							<div class="f-mb">
-									<span>当前高度:{{ formState.height }}</span>							
+								<span>当前高度:{{ formState.height }}</span>
 							</div>
 
 							<div class="f-tac">
-									<button @click="startPlay">{{
-										isStart ? '暂停' : '播放'
-									}}</button>
-									<button @click="goBack">返回</button>
-									<el-checkbox 
-                  label="显示全景"
-										v-model="formState.enabledShowElse"
-										@change="onChangeElse"
-										/>							
+								<button @click="startPlay">
+									{{ isStart ? '暂停' : '播放' }}
+								</button>
+								<button @click="goBack">返回</button>
+								<el-checkbox
+									label="显示全景"
+									v-model="formState.enabledShowElse"
+									@change="onChangeElse"
+								/>
 							</div>
+						</div>
+					</div>
+					<div class="flood-box" v-if="isTongShi">
+						<div class="f-mb">
+							<button @click="drawLine">通视分析</button>
+							<button @click="drawCircle">圆形通视分析</button>
+							<button @click="clearAll">清除</button>
+						</div>
+					</div>
+					<div class="flood-box" v-if="isShadows">
+						<div class="f-mb">
+							<div>
+								<span>时间选择:</span>
+                <el-slider
+									tooltipPlacement="bottom"
+									v-model="timeVal"
+									@change="timeChange"
+									:min="0"
+									:max="1440"
+									:step="1"
+								/>
+              </div>
+						</div>
+						<div class="f-mb">
+							<div>
+								<span>当前时间:</span>
+								<span>{{ currDate }} {{ hours }} 时 {{ minutes }}分</span>
+              </div>
+						</div>
+						<div class="f-mb">
+							<div>
+								<span>自动播放:</span>
+								<button @click="startPlay">播放</button>
+								<button @click="stopPlay">暂停</button>
+              </div>
 						</div>
 					</div>
 				</el-main>
@@ -212,10 +251,15 @@ const isFlood = ref(false);
 const isStart = ref(true);
 const isShow = ref(false);
 const floodColor = ref('rgba(0, 123, 230, 0.5)');
+let sightline;
+const isTongShi = ref(false);
+let shadows;
+const isShadows = ref(false);
 onMounted(() => {
 	map = initMap();
 	threeDTilesLayer = queryTilesetData();
 	addLayer(threeDTilesLayer);
+	queryGeoJsonData();
 	eventTarget.on('heightChange', e => {
 		isShow.value = true;
 		formState.height = Math.ceil(e.height);
@@ -230,11 +274,8 @@ function initMap() {
 	const map = new mars3d.Map('mars3dContainer', {
 		scene: {
 			center: {
-				lat: 41, //41.6355340078007,118.70782726584
-				lng: 118,
-				alt: 17033341,
-				heading: 359,
-				pitch: -90,
+				lat: 28.267803,
+				lng: 113.061611,
 			},
 			showSun: true,
 			showMoon: true,
@@ -259,8 +300,8 @@ function initMap() {
 			contextmenu: { hasDefault: true }, // 右键菜单
 		},
 		terrain: {
-			url: '//data.mars3d.cn/terrain',
-			show: true,
+			//url: '//data.mars3d.cn/terrain',
+			show: false,
 		},
 		basemaps: [
 			{
@@ -272,11 +313,46 @@ function initMap() {
 			},
 		],
 	});
+	sightline = new mars3d.thing.Sightline({
+		visibleColor: new Cesium.Color(0, 1, 0, 0.4),
+		hiddenColor: new Cesium.Color(1, 0, 0, 0.4),
+		// depthFailColor: Cesium.Color.fromCssColorString("#db2c8f"),
+	});
+	map.addThing(sightline);
+
+	const graphicLayer = new mars3d.layer.GeoJsonLayer({
+		name: '房屋信息',
+		url: '/MERGE.json',
+		clampToGround: true,
+		popup:
+			'房屋ID:{ID} <br/> 居住人数: {居住人数}<br/>  房主: {房主}<br/> 面积: {AREA}平方米',
+		symbol: {
+			type: 'polygon',
+			styleOptions: {
+				opacity: 0.6,
+				color: '#0000FF',
+			},
+		},
+	});
+	map.addLayer(graphicLayer);
+	// load事件,必须在load完成前绑定才能监听
+
+	graphicLayer.on(mars3d.EventType.load, function (event) {
+		if (event.layer) {
+			console.log('数据加载完成', event);
+		}
+	});
+	// 单击事件
+	graphicLayer.on(mars3d.EventType.click, function (event) {
+		console.log('单击了图层', event);
+	});
+
 	// 打印测试信息
 	//console.log('mars3d的Map主对象构造完成', map);
 	//console.log('其中Cesium原生的Cesium.Viewer为', map.viewer);
 	return map;
 }
+function queryGeoJsonData() {}
 //获取模型
 function queryTilesetData() {
 	const tiles3dLayer = new mars3d.layer.TilesetLayer({
@@ -293,12 +369,21 @@ function queryTilesetData() {
 			heading: 7,
 			pitch: -29,
 		},
-    position: {
-					alt: 79,
-				},
+		position: {
+			alt: 35,
+		},
 		preferLeaves: false,
 		flyTo: true, //false TODO:交付记得改回来
-		popup: 'all',
+		shadows: Cesium.ShadowMode.ENABLED,
+	});
+	tiles3dLayer.allowDrillPick = true;
+	shadows = new mars3d.thing.Shadows({
+		multiplier: 1600,
+	});
+	map.addThing(shadows);
+	shadows.on(mars3d.EventType.change, function () {
+		const shadowTime = shadows.time;
+		eventTarget.fire('changeShadows', { shadowTime });
 	});
 	return tiles3dLayer;
 }
@@ -316,6 +401,9 @@ function handleSelect(key, keyPath) {
 	console.log(key, keyPath);
 	ifShowMeasure.value = false;
 	isFlood.value = false;
+	isTongShi.value = false;
+	map.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+	map.viewer.scene.requestRender();
 	//移除原本的地图,切换成卷帘
 	if (key == '2') {
 		removeLayer(threeDTilesLayer);
@@ -328,19 +416,25 @@ function handleSelect(key, keyPath) {
 		addLayer(threeDTilesLayer);
 		return;
 	} else if (key == '3') {
-    if (mapSplit != null) {
+		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
 		}
 		startMeasure();
 		ifShowMeasure.value = true;
 		return;
 	} else if (key == '4') {
-    if (mapSplit != null) {
+		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
 		}
-    removeLayer(threeDTilesLayer);
+		removeLayer(threeDTilesLayer);
 		isFlood.value = true;
 		initFlood();
+		return;
+	} else if (key == '5') {
+		if (mapSplit != null) {
+			map.removeControl(mapSplit, true);
+		}
+		isTongShi.value = true;
 		return;
 	}
 }
@@ -363,7 +457,7 @@ function contrast() {
 				position: {
 					lat: 28.267795,
 					lng: 113.062522,
-					alt: 79,
+					alt: 35,
 				},
 				preferLeaves: false,
 				maximumMemoryUsage: 155,
@@ -389,7 +483,7 @@ function contrast() {
 				position: {
 					lat: 28.267959,
 					lng: 113.062431,
-					alt: 79,
+					alt: 35,
 				},
 				preferLeaves: false,
 				maximumMemoryUsage: 155,
@@ -499,8 +593,13 @@ function measurePoint() {
 function removeAll() {
 	measure.clear();
 }
+//洪水模拟
 function initFlood() {
 	// 基于地球材质，可以多个区域
+	map.viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
+		url: '//data.mars3d.cn/terrain',
+		show: true,
+	});
 	floodByMaterial = new mars3d.thing.FloodByMaterial({
 		color: 'rgba(0, 123, 230, 0.5)', // 淹没颜色
 	});
@@ -575,7 +674,7 @@ function updateHeightRange(graphic, positions, callback) {
 	);
 }
 
-// 开始分析
+// 开始量算分析
 function mapBegin(data) {
 	if (floodByMaterial.length === 0) {
 		ElMessage('请首先绘制分析区域！');
@@ -612,10 +711,114 @@ function mapStartPlay() {
 function mapOnChangeElse(val) {
 	floodByMaterial.showElseArea = val;
 }
-
+//清除通视分析
 function mapClearDraw() {
 	floodByMaterial.clear();
 	map.graphicLayer.clear();
+}
+//画圆通视分析
+function drawCircle() {
+	map.graphicLayer.clear();
+	map.graphicLayer.startDraw({
+		type: 'circle',
+		style: {
+			color: '#ffff00',
+			opacity: 0.2,
+			clampToGround: true,
+		},
+		success: function (graphic) {
+			// 绘制成功后回调
+			let center = graphic.positionShow;
+			center = mars3d.PointUtil.addPositionsHeight(center, 1.5); // 加人的身高等因素，略微抬高一些
+			const targetPoints = graphic.getOutlinePositions(false, 45);
+			map.graphicLayer.clear();
+			map.scene.globe.depthTestAgainstTerrain = true;
+			for (let i = 0; i < targetPoints.length; i++) {
+				let targetPoint = targetPoints[i];
+				targetPoint = mars3d.PointUtil.getSurfacePosition(
+					map.scene,
+					targetPoint
+				);
+				sightline.add(center, targetPoint);
+			}
+			createPoint(center, true);
+			map.scene.globe.depthTestAgainstTerrain = false;
+		},
+	});
+}
+//线通视分析
+function drawLine() {
+	map.graphicLayer.clear();
+	map.graphicLayer.startDraw({
+		type: 'polyline',
+		maxPointNum: 2,
+		style: {
+			color: '#55ff33',
+			width: 3,
+		},
+		success: function (graphic) {
+			// 绘制成功后回调
+			const positions = graphic.positionsShow;
+			map.graphicLayer.clear();
+			map.scene.globe.depthTestAgainstTerrain = true;
+
+			const center = positions[0];
+			const targetPoint = positions[1];
+			sightline.add(center, targetPoint, { offsetHeight: 1.5 }); // 1.5是加人的身高等因素，略微抬高一些
+			createPoint(center, true);
+			createPoint(targetPoint, false);
+			map.scene.globe.depthTestAgainstTerrain = false;
+		},
+	});
+}
+//通视分析点
+function createPoint(position, isFirst) {
+	const graphic = new mars3d.graphic.PointEntity({
+		position: position,
+		style: {
+			color: Cesium.Color.fromCssColorString('#3388ff'),
+			pixelSize: 6,
+			outlineColor: Cesium.Color.fromCssColorString('#ffffff'),
+			outlineWidth: 2,
+			scaleByDistance: new Cesium.NearFarScalar(1.5e2, 1.0, 8.0e6, 0.2),
+			label: {
+				text: isFirst ? '观察位置' : '目标点',
+				font_size: 17,
+				font_family: '楷体',
+				color: Cesium.Color.AZURE,
+				outline: true,
+				outlineColor: Cesium.Color.BLACK,
+				outlineWidth: 2,
+				horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+				verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+				pixelOffset: new Cesium.Cartesian2(0, -20), // 偏移量
+				distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
+					0.0,
+					2000000
+				),
+			},
+		},
+	});
+	map.graphicLayer.addGraphic(graphic);
+
+	return graphic;
+}
+function clearAll() {
+	sightline.clear();
+	map.graphicLayer.clear();
+}
+function stopPlay() {
+	if (shadows && shadows.isStart) {
+		shadows.pause();
+	}
+}
+//开始播放光照
+function startPlay(date, hours, minutes) {
+	const currentTime = setShadows(date, hours, minutes);
+	const startDate = new Date(date + ' 00:00:00');
+	const endDate = new Date(date + ' 23:59:59');
+
+	shadows.start(startDate, endDate, currentTime);
 }
 // 添加矩形
 const btnDrawExtent = () => {
