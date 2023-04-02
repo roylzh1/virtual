@@ -28,6 +28,18 @@
 						<el-icon style="vertical-align: middle"><location /></el-icon>
 						<span>通视分析</span>
 					</el-menu-item>
+					<el-menu-item index="6">
+						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<span>日照分析</span>
+					</el-menu-item>
+					<el-menu-item index="7">
+						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<span>住户信息</span>
+					</el-menu-item>
+					<el-menu-item index="8">
+						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<span>花园信息</span>
+					</el-menu-item>
 				</el-menu>
 			</el-aside>
 			<el-container>
@@ -187,6 +199,7 @@
 							</div>
 						</div>
 					</div>
+					<!--通视分析工具栏-->
 					<div class="flood-box" v-if="isTongShi">
 						<div class="f-mb">
 							<button @click="drawLine">通视分析</button>
@@ -194,33 +207,53 @@
 							<button @click="clearAll">清除</button>
 						</div>
 					</div>
+					<!--光照分析工具栏-->
 					<div class="flood-box" v-if="isShadows">
 						<div class="f-mb">
 							<div>
 								<span>时间选择:</span>
-                <el-slider
+								<el-slider
 									tooltipPlacement="bottom"
 									v-model="timeVal"
-									@change="timeChange"
+									@change="myTimeChange"
 									:min="0"
 									:max="1440"
 									:step="1"
 								/>
-              </div>
+							</div>
 						</div>
 						<div class="f-mb">
 							<div>
 								<span>当前时间:</span>
 								<span>{{ currDate }} {{ hours }} 时 {{ minutes }}分</span>
-              </div>
+							</div>
 						</div>
 						<div class="f-mb">
 							<div>
 								<span>自动播放:</span>
-								<button @click="startPlay">播放</button>
-								<button @click="stopPlay">暂停</button>
-              </div>
+								<button @click="myStartPlayLight">播放</button>
+								<button @click="myStopPlayLight">暂停</button>
+							</div>
 						</div>
+					</div>
+					<div class="tableBox" v-if="isTable">
+						<el-table
+							:data="tableData"
+							border
+							height="100%"
+							style="width: 100%"
+						>
+							<el-table-column prop="ID" label="序号" width="180" />
+							<el-table-column prop="居住人数" label="居住人数" width="180" />
+							<el-table-column prop="房主" label="房主" width="180" />
+							<el-table-column prop="AREA" label="面积 m²" />
+						</el-table>
+					</div>
+					<div class="tableBox2" v-show="isCharts">
+						<div class="c1">111</div>
+						<div class="c2"></div>
+						<div class="c3"></div>
+						<div class="c4"></div>
 					</div>
 				</el-main>
 			</el-container>
@@ -228,24 +261,27 @@
 	</div>
 </template>
 <script setup>
-import { onMounted, reactive, ref, onUnmounted } from 'vue';
+import { onMounted, reactive, ref, onUnmounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import 'mars3d-cesium/Build/Cesium/Widgets/widgets.css'; //依赖的cesium库本身css
 import 'mars3d/dist/mars3d.css';
 import * as mars3d from 'mars3d';
+import dayjs from 'dayjs';
+import * as echarts from 'echarts';
 let map;
 const eventTarget = new mars3d.BaseClass(); // 事件对象，用于抛出事件到面板中
 let threeDTilesLayer; //第一次加载的模型
+let floodTilesLayer; //洪水淹没加载的模型
 let mapSplit; //卷帘对比图层
 let measure; //量算组件
-let floodByMaterial; //淹没组件
+let floodByGraphic; //淹没组件
+let drawPotions;
 const ifShowMeasure = ref(false);
 const formState = reactive({
 	minHeight: 0,
 	maxHeight: 0,
 	height: 0,
-	speed: 80,
-	enabledShowElse: true,
+	speed: 10,
 });
 const isFlood = ref(false);
 const isStart = ref(true);
@@ -255,15 +291,168 @@ let sightline;
 const isTongShi = ref(false);
 let shadows;
 const isShadows = ref(false);
+const currDate = ref(dayjs().format('YYYY-MM-DD'));
+const timeVal = ref(420);
+const hours = computed(() => Math.floor(timeVal.value / 60));
+const minutes = computed(() => Math.floor(timeVal.value % 60));
+const isTable = ref(false);
+const isCharts = ref(false);
+
 onMounted(() => {
 	map = initMap();
 	threeDTilesLayer = queryTilesetData();
+	floodTilesLayer = queryFloodTilesetData();
 	addLayer(threeDTilesLayer);
 	queryGeoJsonData();
 	eventTarget.on('heightChange', e => {
 		isShow.value = true;
 		formState.height = Math.ceil(e.height);
 	});
+	eventTarget.on('changeShadows', event => {
+		const date = event.shadowTime;
+		timeVal.value = date.getHours() * 60 + date.getMinutes();
+	});
+	var myChart1 = echarts.init(document.querySelector('.c1'), null, {
+    width: 800,
+    height: 500
+  });
+	// 绘制图表
+	myChart1.setOption( {
+  title: {
+    text: '车位情况',
+    left: 'center'
+  },
+  tooltip: {
+    trigger: 'item'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  series: [
+    {
+      name: 'Access From',
+      type: 'pie',
+      radius: '50%',
+      data: [
+        { value: 148, name: '已占车位' },
+        { value: 235, name: '剩余车位' },
+
+      ],
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }
+  ]
+});
+
+  var myChart2 = echarts.init(document.querySelector('.c2'), null, {
+    width: 800,
+    height: 500
+  });
+	// 绘制图表
+	myChart2.setOption({
+  title: {
+    text: '实际住户占比',
+    left: 'center'
+  },
+  tooltip: {
+    trigger: 'item'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  series: [
+    {
+      name: 'Access From',
+      type: 'pie',
+      radius: '50%',
+      data: [
+        { value: 230, name: '入住' },
+        { value: 100, name: '未入住' },
+
+      ],
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }
+  ]
+});
+
+  var myChart3 = echarts.init(document.querySelector('.c3'), null, {
+    width: 800,
+    height: 500
+  });
+	// 绘制图表
+	myChart3.setOption({
+    title: {
+    text: '电力消耗情况',
+    left: 'center'
+  },
+  tooltip: {
+    trigger: 'item'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  xAxis: {
+    type: 'category',
+    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  },
+  yAxis: {
+    type: 'value'
+  },
+  series: [
+    {
+      data: [1420, 1032, 1901, 1034, 1290, 1330, 1320],
+      type: 'line',
+      smooth: true
+    }
+  ]
+});
+
+  var myChart4 = echarts.init(document.querySelector('.c4'), null, {
+    width: 800,
+    height: 500
+  });
+	// 绘制图表
+	myChart4.setOption({
+    title: {
+    text: '水资源消耗情况',
+    left: 'center'
+  },
+  tooltip: {
+    trigger: 'item'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  xAxis: {
+    type: 'category',
+    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  },
+  yAxis: {
+    type: 'value'
+  },
+  series: [
+    {
+      data: [1020, 1132, 1901, 2134, 1290, 1830, 1420],
+      type: 'line',
+      smooth: true
+    }
+  ]
+});
 });
 onUnmounted(() => {
 	map = null;
@@ -319,13 +508,31 @@ function initMap() {
 		// depthFailColor: Cesium.Color.fromCssColorString("#db2c8f"),
 	});
 	map.addThing(sightline);
-
+	// 基于polygon矢量面抬高模拟，只支持单个区域
+	floodByGraphic = new mars3d.thing.FloodByGraphic({
+		// perPositionHeight: true, // 是否每个分析点高度都不一样
+		style: {
+			color: '#007be6',
+			opacity: 0.5,
+			outline: false,
+		},
+	});
+	floodByGraphic.on(mars3d.EventType.start, function (e) {
+		console.log('开始分析', e);
+	});
+	floodByGraphic.on(mars3d.EventType.change, function (e) {
+		const height = e.height;
+		eventTarget.fire('heightChange', { height });
+	});
+	floodByGraphic.on(mars3d.EventType.end, function (e) {
+		console.log('结束分析', e);
+	});
 	const graphicLayer = new mars3d.layer.GeoJsonLayer({
 		name: '房屋信息',
 		url: '/MERGE.json',
 		clampToGround: true,
 		popup:
-			'房屋ID:{ID} <br/> 居住人数: {居住人数}<br/>  房主: {房主}<br/> 面积: {AREA}平方米',
+			'房屋ID:{ID} <br/> 居住人数: {居住人数}<br/>  房主: {房主}<br/> 面积: {AREA} m²',
 		symbol: {
 			type: 'polygon',
 			styleOptions: {
@@ -347,9 +554,11 @@ function initMap() {
 		console.log('单击了图层', event);
 	});
 
-	// 打印测试信息
-	//console.log('mars3d的Map主对象构造完成', map);
-	//console.log('其中Cesium原生的Cesium.Viewer为', map.viewer);
+	// 创建DIV数据图层
+	const videoGraphicLayer = new mars3d.layer.GraphicLayer();
+	map.addLayer(videoGraphicLayer);
+	addRandomGraphicByCount(videoGraphicLayer, [113.064212, 28.267046, 5]);
+	addRandomGraphic2ByCount(videoGraphicLayer, [113.061906, 28.268769, 5]);
 	return map;
 }
 function queryGeoJsonData() {}
@@ -380,11 +589,35 @@ function queryTilesetData() {
 	shadows = new mars3d.thing.Shadows({
 		multiplier: 1600,
 	});
-	map.addThing(shadows);
 	shadows.on(mars3d.EventType.change, function () {
 		const shadowTime = shadows.time;
 		eventTarget.fire('changeShadows', { shadowTime });
 	});
+	return tiles3dLayer;
+}
+function queryFloodTilesetData() {
+	const tiles3dLayer = new mars3d.layer.TilesetLayer({
+		name: '碧桂园',
+		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
+		maximumMemoryUsage: 512,
+		dynamicScreenSpaceError: true,
+		cullWithChildrenBounds: true,
+		skipLevelOfDetail: true, //113.061611,28.267803
+		center: {
+			lat: 28.267803,
+			lng: 113.061611,
+			alt: 100,
+			heading: 7,
+			pitch: -29,
+		},
+		position: {
+			alt: 79,
+		},
+		preferLeaves: false,
+		flyTo: true, //false TODO:交付记得改回来
+		shadows: Cesium.ShadowMode.ENABLED,
+	});
+	tiles3dLayer.allowDrillPick = true;
 	return tiles3dLayer;
 }
 function addLayer(layer) {
@@ -402,8 +635,13 @@ function handleSelect(key, keyPath) {
 	ifShowMeasure.value = false;
 	isFlood.value = false;
 	isTongShi.value = false;
+	isShadows.value = false;
+	isTable.value = false;
+	map.removeThing(shadows);
+	map.removeThing(floodByGraphic);
 	map.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
 	map.viewer.scene.requestRender();
+	removeLayer(floodTilesLayer);
 	//移除原本的地图,切换成卷帘
 	if (key == '2') {
 		removeLayer(threeDTilesLayer);
@@ -419,6 +657,9 @@ function handleSelect(key, keyPath) {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
 		}
+		if (!map.getLayer('碧桂园')) {
+			addLayer(threeDTilesLayer);
+		}
 		startMeasure();
 		ifShowMeasure.value = true;
 		return;
@@ -427,14 +668,50 @@ function handleSelect(key, keyPath) {
 			map.removeControl(mapSplit, true);
 		}
 		removeLayer(threeDTilesLayer);
+		map.addThing(floodByGraphic);
+		addLayer(floodTilesLayer);
+		map.viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
+			url: '//data.mars3d.cn/terrain',
+			show: true,
+		});
 		isFlood.value = true;
-		initFlood();
 		return;
 	} else if (key == '5') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
 		}
+		if (!map.getLayer('碧桂园')) {
+			addLayer(threeDTilesLayer);
+		}
 		isTongShi.value = true;
+		return;
+	} else if (key == '6') {
+		if (mapSplit != null) {
+			map.removeControl(mapSplit, true);
+		}
+		if (!map.getLayer('碧桂园')) {
+			addLayer(threeDTilesLayer);
+		}
+		map.addThing(shadows);
+		isShadows.value = true;
+		return;
+	} else if (key == '7') {
+		if (mapSplit != null) {
+			map.removeControl(mapSplit, true);
+		}
+		if (!map.getLayer('碧桂园')) {
+			addLayer(threeDTilesLayer);
+		}
+		isTable.value = true;
+		return;
+	} else if (key == '8') {
+		if (mapSplit != null) {
+			map.removeControl(mapSplit, true);
+		}
+		if (!map.getLayer('碧桂园')) {
+			addLayer(threeDTilesLayer);
+		}
+		isCharts.value = true;
 		return;
 	}
 }
@@ -496,8 +773,8 @@ function contrast() {
 	});
 	map.addControl(mapSplit);
 }
+//#region 量算
 
-//量算
 function startMeasure() {
 	measure = new mars3d.thing.Measure({
 		label: {
@@ -593,73 +870,81 @@ function measurePoint() {
 function removeAll() {
 	measure.clear();
 }
-//洪水模拟
-function initFlood() {
-	// 基于地球材质，可以多个区域
-	map.viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
-		url: '//data.mars3d.cn/terrain',
-		show: true,
-	});
-	floodByMaterial = new mars3d.thing.FloodByMaterial({
-		color: 'rgba(0, 123, 230, 0.5)', // 淹没颜色
-	});
-	map.addThing(floodByMaterial);
+//#endregion
+//#region 洪水模拟
 
-	floodByMaterial.on(mars3d.EventType.start, function (e) {
-		console.log('开始分析', e);
-	});
-
-	floodByMaterial.on(mars3d.EventType.change, function (e) {
-		const height = e.height;
-		eventTarget.fire('heightChange', { height });
-	});
-
-	floodByMaterial.on(mars3d.EventType.end, function (e) {
-		console.log('结束分析', e);
-	});
-}
 // 绘制矩形
 function mapBtnDrawExtent(callback) {
-	clearDraw();
+	floodClearDraw();
 	map.graphicLayer.startDraw({
 		type: 'rectangle',
 		style: {
-			color: 'rgba(0, 123, 230, 0.5)',
-			// clampToGround: true
+			color: '#007be6',
+			opacity: 0.8,
+			outline: false,
 		},
 		success: function (graphic) {
 			// 绘制成功后回调
 			const positions = graphic.getOutlinePositions(false);
-
-			// 更新最大、最小高度值
-			updateHeightRange(graphic, positions, callback);
-
 			// 区域
-			floodByMaterial.addArea(positions);
+			drawPotions = positions;
+			if (floodByGraphic.options.perPositionHeight) {
+				// eslint-disable-next-line
+				callback(-100, 100);
+			} else {
+				// 求最大、最小高度值
+				graphic.show = false; // 会遮挡深度图，所以需要隐藏
+				mars3d.PolyUtil.interPolygonByDepth({
+					scene: map.scene,
+					positions,
+				}).then(result => {
+					graphic.show = true; // 恢复显示
+					callback(result.minHeight, result.maxHeight);
+				});
+			}
 		},
 	});
 }
-
 // 绘制多边形
 function mapBtnDraw(callback) {
-	clearDraw();
+	floodClearDraw();
 	map.graphicLayer.startDraw({
 		type: 'polygon',
 		style: {
-			color: 'rgba(0, 123, 230, 0.5)',
+			color: '#007be6',
+			opacity: 0.5,
 			outline: false,
-			// clampToGround: true
 		},
 		success: function (graphic) {
 			const positions = graphic.positionsShow;
-
-			// 更新最大、最小高度值
-			updateHeightRange(graphic, positions, callback);
-			floodByMaterial.addArea(positions);
+			drawPotions = positions;
+			if (floodByGraphic.options.perPositionHeight) {
+				// eslint-disable-next-line
+				callback(-100, 100);
+			} else {
+				showLoading();
+				// 求最大、最小高度值
+				graphic.show = false; // 会遮挡深度图，所以需要隐藏
+				mars3d.PolyUtil.interPolygonByDepth({
+					scene: map.scene,
+					positions,
+				}).then(result => {
+					graphic.show = true; // 恢复显示
+					hideLoading();
+					callback(result.minHeight, result.maxHeight);
+				});
+			}
 		},
 	});
 }
+function floodClearDraw() {
+	drawPotions = null;
+	map.graphicLayer.clear();
 
+	if (floodByGraphic) {
+		floodByGraphic.clear();
+	}
+}
 // 求最大、最小高度值
 function updateHeightRange(graphic, positions, callback) {
 	// 求最大、最小高度值
@@ -676,24 +961,22 @@ function updateHeightRange(graphic, positions, callback) {
 
 // 开始量算分析
 function mapBegin(data) {
-	if (floodByMaterial.length === 0) {
+	if (drawPotions == null) {
 		ElMessage('请首先绘制分析区域！');
 		return;
 	}
 	map.graphicLayer.clear();
-	const minValue = Number(data.minHeight);
-	const maxValue = Number(data.maxHeight);
-	const speed = Number(data.speed);
-	floodByMaterial.setOptions({
-		minHeight: minValue,
-		maxHeight: maxValue,
-		speed: speed,
+	floodByGraphic.setOptions({
+		positions: drawPotions,
+		minHeight: Number(data.minHeight),
+		maxHeight: Number(data.maxHeight),
+		speed: Number(data.speed),
 	});
-	floodByMaterial.start();
+	floodByGraphic.start();
 }
 // 高度选择
 function mapOnChangeHeight(height) {
-	floodByMaterial.height = height;
+	floodByGraphic.height = height;
 }
 // 颜色发生改变
 function mapOnChangeColor(color) {
@@ -701,16 +984,18 @@ function mapOnChangeColor(color) {
 }
 // 自动播放
 function mapStartPlay() {
-	if (floodByMaterial.isStart) {
-		floodByMaterial.stop();
+	if (floodByGraphic.isStart) {
+		floodByGraphic.stop();
 	} else {
-		floodByMaterial.start();
+		floodByGraphic.start();
 	}
 }
 // 是否显示非淹没区域
 function mapOnChangeElse(val) {
 	floodByMaterial.showElseArea = val;
 }
+//#endregion
+//#region 通视
 //清除通视分析
 function mapClearDraw() {
 	floodByMaterial.clear();
@@ -761,7 +1046,6 @@ function drawLine() {
 			const positions = graphic.positionsShow;
 			map.graphicLayer.clear();
 			map.scene.globe.depthTestAgainstTerrain = true;
-
 			const center = positions[0];
 			const targetPoint = positions[1];
 			sightline.add(center, targetPoint, { offsetHeight: 1.5 }); // 1.5是加人的身高等因素，略微抬高一些
@@ -803,28 +1087,88 @@ function createPoint(position, isFirst) {
 
 	return graphic;
 }
+//#endregion
+//#region 日照分析
 function clearAll() {
 	sightline.clear();
 	map.graphicLayer.clear();
 }
-function stopPlay() {
+function stopPlayLight() {
 	if (shadows && shadows.isStart) {
 		shadows.pause();
 	}
 }
 //开始播放光照
-function startPlay(date, hours, minutes) {
+function startPlayLight(date, hours, minutes) {
 	const currentTime = setShadows(date, hours, minutes);
 	const startDate = new Date(date + ' 00:00:00');
 	const endDate = new Date(date + ' 23:59:59');
-
 	shadows.start(startDate, endDate, currentTime);
 }
+function setShadows(date, hours, minutes) {
+	const dateTime = new Date(`${date} ${hours}:${minutes}:00`);
+	shadows.time = dateTime;
+	return dateTime;
+}
+//#endregion
+function addRandomGraphicByCount(graphicLayer, position) {
+	const graphicImg = new mars3d.graphic.DivGraphic({
+		position: position,
+		style: {
+			html: ` <div class="camera-content">
+                      <img style=" height: 50px;width: 50px;" src="/-s-摄像头.svg" >
+                    </div>
+                    <div class="mars3d-camera-line" ></div>
+                    <div class="mars3d-camera-point"></div>
+                  `,
+			offsetX: -16,
+			distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 100000),
+		},
+		popup: `<video src='http://data.mars3d.cn/file/video/lukou.mp4' controls autoplay style="width: 300px;" ></video>`,
+		popupOptions: {
+			offsetY: -170, // 显示Popup的偏移值，是DivGraphic本身的像素高度值
+			template: `<div class="marsBlackPanel animation-spaceInDown">
+                        <div class="marsBlackPanel-text">{content}</div>
+                        <span class="mars3d-popup-close-button closeButton" >×</span>
+                      </div>`,
+			horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+			verticalOrigin: Cesium.VerticalOrigin.CENTER,
+		},
+	});
+	graphicLayer.addGraphic(graphicImg);
+}
+function addRandomGraphic2ByCount(graphicLayer, position) {
+	const graphicImg = new mars3d.graphic.DivGraphic({
+		position: position,
+		style: {
+			html: ` <div class="camera-content">
+                      <img style=" height: 50px;width: 50px;" src="/-s-摄像头.svg" >
+                    </div>
+                    <div class="mars3d-camera-line" ></div>
+                    <div class="mars3d-camera-point"></div>
+                  `,
+			offsetX: -16,
+			distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 100000),
+		},
+		popup: `<video src='/210261071-1-16.mp4' controls autoplay style="width: 300px;" ></video>`,
+		popupOptions: {
+			offsetY: -170, // 显示Popup的偏移值，是DivGraphic本身的像素高度值
+			template: `<div class="marsBlackPanel animation-spaceInDown">
+                        <div class="marsBlackPanel-text">{content}</div>
+                        <span class="mars3d-popup-close-button closeButton" >×</span>
+                      </div>`,
+			horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+			verticalOrigin: Cesium.VerticalOrigin.CENTER,
+		},
+	});
+	graphicLayer.addGraphic(graphicImg);
+}
+//#region 量算的功能
 // 添加矩形
 const btnDrawExtent = () => {
 	mapBtnDrawExtent((min, max) => {
-		formState.minHeight = min;
-		formState.maxHeight = max;
+		formState.minHeight = Math.ceil(min);
+		formState.maxHeight = Math.ceil(max);
 	});
 };
 // 添加多边形
@@ -839,7 +1183,8 @@ const clearDraw = () => {
 	formState.minHeight = 0;
 	formState.maxHeight = 0;
 };
-// 开始淹没
+//#endregion
+//#region 开始淹没
 const begin = () => {
 	mapBegin(formState);
 };
@@ -872,6 +1217,27 @@ const goBack = () => {
 const onChangeElse = () => {
 	mapOnChangeElse(formState.enabledShowElse);
 };
+//#endregion
+const myTimeChange = () => {
+	setShadows(currDate.value, hours.value, minutes.value);
+};
+const myStartPlayLight = () => {
+	startPlayLight(currDate.value, hours.value, minutes.value);
+};
+const myStopPlayLight = () => {
+	stopPlayLight();
+};
+let tableData = ref();
+let xhr = new XMLHttpRequest();
+xhr.open('GET', '/file.json', true);
+xhr.setRequestHeader('Content-type', 'application/json');
+xhr.onreadystatechange = function () {
+	if (xhr.readyState === 4 && xhr.status === 200) {
+		// 将获取到的JSON数据转换为JavaScript对象
+		tableData.value = JSON.parse(xhr.responseText);
+	}
+};
+xhr.send();
 </script>
 <style scoped>
 .ant-slider {
@@ -979,5 +1345,37 @@ const onChangeElse = () => {
 	border-radius: 5px;
 	border: 0px;
 	background-color: #1371afa6;
+}
+.camera-content {
+	height: 50px;
+	width: 100px;
+	background-color: #ff0000;
+}
+.camera-img {
+	height: 50px;
+	width: 50px;
+}
+.tableBox {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	background-color: #fff;
+}
+.tableBox2 {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	background-color: #fff;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	grid-template-rows: repeat(2, 1fr);
+	gap: 10px;
+}
+.c1 {
+	z-index: 10;
 }
 </style>
