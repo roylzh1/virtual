@@ -9,35 +9,35 @@
 					@select="handleSelect"
 				>
 					<el-menu-item index="1">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
-						<span>首页</span>
+						<el-icon style="vertical-align: middle"><House /></el-icon>
+						<span>湘龙花园</span>
 					</el-menu-item>
 					<el-menu-item index="2">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
-						<span>违建对比</span>
+						<el-icon style="vertical-align: middle"><Connection /></el-icon>
+						<span>一期二期对比</span>
 					</el-menu-item>
 					<el-menu-item index="3">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<el-icon style="vertical-align: middle"><MapLocation /></el-icon>
 						<span>空间量算</span>
 					</el-menu-item>
 					<el-menu-item index="4">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<el-icon style="vertical-align: middle"><Pouring /></el-icon>
 						<span>淹没分析</span>
 					</el-menu-item>
 					<el-menu-item index="5">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<el-icon style="vertical-align: middle"><SetUp /></el-icon>
 						<span>通视分析</span>
 					</el-menu-item>
 					<el-menu-item index="6">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<el-icon style="vertical-align: middle"><Sunny /></el-icon>
 						<span>日照分析</span>
 					</el-menu-item>
 					<el-menu-item index="7">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<el-icon style="vertical-align: middle"><Document /></el-icon>
 						<span>住户信息</span>
 					</el-menu-item>
 					<el-menu-item index="8">
-						<el-icon style="vertical-align: middle"><location /></el-icon>
+						<el-icon style="vertical-align: middle"><DocumentRemove /></el-icon>
 						<span>花园信息</span>
 					</el-menu-item>
 				</el-menu>
@@ -250,7 +250,7 @@
 						</el-table>
 					</div>
 					<div class="tableBox2" v-show="isCharts">
-						<div class="c1">111</div>
+						<div class="c1"></div>
 						<div class="c2"></div>
 						<div class="c3"></div>
 						<div class="c4"></div>
@@ -316,7 +316,6 @@ onMounted(() => {
     width: 800,
     height: 500
   });
-	// 绘制图表
 	myChart1.setOption( {
   title: {
     text: '车位情况',
@@ -354,7 +353,6 @@ onMounted(() => {
     width: 800,
     height: 500
   });
-	// 绘制图表
 	myChart2.setOption({
   title: {
     text: '实际住户占比',
@@ -392,7 +390,6 @@ onMounted(() => {
     width: 800,
     height: 500
   });
-	// 绘制图表
 	myChart3.setOption({
     title: {
     text: '电力消耗情况',
@@ -425,7 +422,6 @@ onMounted(() => {
     width: 800,
     height: 500
   });
-	// 绘制图表
 	myChart4.setOption({
     title: {
     text: '水资源消耗情况',
@@ -536,8 +532,8 @@ function initMap() {
 		symbol: {
 			type: 'polygon',
 			styleOptions: {
-				opacity: 0.6,
-				color: '#0000FF',
+				opacity: 0.01,
+				color: 'rgba(255,255,255,0)',
 			},
 		},
 	});
@@ -567,7 +563,7 @@ function queryTilesetData() {
 	const tiles3dLayer = new mars3d.layer.TilesetLayer({
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
-		maximumMemoryUsage: 512,
+		maximumMemoryUsage: 255,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
@@ -599,7 +595,7 @@ function queryFloodTilesetData() {
 	const tiles3dLayer = new mars3d.layer.TilesetLayer({
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
-		maximumMemoryUsage: 512,
+		maximumMemoryUsage: 255,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
@@ -637,6 +633,7 @@ function handleSelect(key, keyPath) {
 	isTongShi.value = false;
 	isShadows.value = false;
 	isTable.value = false;
+  isCharts.value = false;
 	map.removeThing(shadows);
 	map.removeThing(floodByGraphic);
 	map.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
@@ -737,7 +734,7 @@ function contrast() {
 					alt: 35,
 				},
 				preferLeaves: false,
-				maximumMemoryUsage: 155,
+				maximumMemoryUsage: 125,
 				dynamicScreenSpaceError: true,
 				cullWithChildrenBounds: true,
 				skipLevelOfDetail: true,
@@ -763,7 +760,7 @@ function contrast() {
 					alt: 35,
 				},
 				preferLeaves: false,
-				maximumMemoryUsage: 155,
+				maximumMemoryUsage: 125,
 				dynamicScreenSpaceError: true,
 				cullWithChildrenBounds: true,
 				skipLevelOfDetail: true, //113.061611,28.267803
@@ -1254,12 +1251,12 @@ xhr.send();
 	flex-direction: row-reverse;
 	justify-content: space-between;
 	align-items: center;
-	height: 7vh;
-	background-color: #52d6a4;
+	height: 6vh;
+	background-color: rgba(98,89,44,1);
 }
 #mars3dContainer {
 	padding: 0;
-	height: 93vh;
+	height: 94vh;
 	width: 100%;
 }
 .el-main {
