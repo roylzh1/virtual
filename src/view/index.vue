@@ -304,6 +304,18 @@ onMounted(() => {
 	floodTilesLayer = queryFloodTilesetData();
 	addLayer(threeDTilesLayer);
 	queryGeoJsonData();
+	map.flyToExtent(
+		{
+			xmin: 113.0608,
+			xmax: 113.063864,
+			ymin: 28.262516,
+			ymax: 28.273114,
+		},
+		{
+			duration: 4,
+			pitch: -50,
+		}
+	);
 	eventTarget.on('heightChange', e => {
 		isShow.value = true;
 		formState.height = Math.ceil(e.height);
@@ -312,142 +324,140 @@ onMounted(() => {
 		const date = event.shadowTime;
 		timeVal.value = date.getHours() * 60 + date.getMinutes();
 	});
-  //#region 图表
+	//#region 图表
 	var myChart1 = echarts.init(document.querySelector('.c1'), null, {
-    width: 800,
-    height: 500
-  });
-	myChart1.setOption( {
-  title: {
-    text: '车位情况',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  legend: {
-    orient: 'vertical',
-    left: 'left'
-  },
-  series: [
-    {
-      name: 'Access From',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 148, name: '已占车位' },
-        { value: 235, name: '剩余车位' },
-
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-});
-  var myChart2 = echarts.init(document.querySelector('.c2'), null, {
-    width: 800,
-    height: 500
-  });
+		width: 800,
+		height: 500,
+	});
+	myChart1.setOption({
+		title: {
+			text: '车位情况',
+			left: 'center',
+		},
+		tooltip: {
+			trigger: 'item',
+		},
+		legend: {
+			orient: 'vertical',
+			left: 'left',
+		},
+		series: [
+			{
+				name: 'Access From',
+				type: 'pie',
+				radius: '50%',
+				data: [
+					{ value: 148, name: '已占车位' },
+					{ value: 235, name: '剩余车位' },
+				],
+				emphasis: {
+					itemStyle: {
+						shadowBlur: 10,
+						shadowOffsetX: 0,
+						shadowColor: 'rgba(0, 0, 0, 0.5)',
+					},
+				},
+			},
+		],
+	});
+	var myChart2 = echarts.init(document.querySelector('.c2'), null, {
+		width: 800,
+		height: 500,
+	});
 	myChart2.setOption({
-  title: {
-    text: '实际住户占比',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  legend: {
-    orient: 'vertical',
-    left: 'left'
-  },
-  series: [
-    {
-      name: 'Access From',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 230, name: '入住' },
-        { value: 100, name: '未入住' },
-
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-});
-  var myChart3 = echarts.init(document.querySelector('.c3'), null, {
-    width: 800,
-    height: 500
-  });
+		title: {
+			text: '实际住户占比',
+			left: 'center',
+		},
+		tooltip: {
+			trigger: 'item',
+		},
+		legend: {
+			orient: 'vertical',
+			left: 'left',
+		},
+		series: [
+			{
+				name: 'Access From',
+				type: 'pie',
+				radius: '50%',
+				data: [
+					{ value: 230, name: '入住' },
+					{ value: 100, name: '未入住' },
+				],
+				emphasis: {
+					itemStyle: {
+						shadowBlur: 10,
+						shadowOffsetX: 0,
+						shadowColor: 'rgba(0, 0, 0, 0.5)',
+					},
+				},
+			},
+		],
+	});
+	var myChart3 = echarts.init(document.querySelector('.c3'), null, {
+		width: 800,
+		height: 500,
+	});
 	myChart3.setOption({
-    title: {
-    text: '电力消耗情况',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  legend: {
-    orient: 'vertical',
-    left: 'left'
-  },
-  xAxis: {
-    type: 'category',
-    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  },
-  yAxis: {
-    type: 'value'
-  },
-  series: [
-    {
-      data: [1420, 1032, 1901, 1034, 1290, 1330, 1320],
-      type: 'line',
-      smooth: true
-    }
-  ]
-});
-  var myChart4 = echarts.init(document.querySelector('.c4'), null, {
-    width: 800,
-    height: 500
-  });
+		title: {
+			text: '电力消耗情况',
+			left: 'center',
+		},
+		tooltip: {
+			trigger: 'item',
+		},
+		legend: {
+			orient: 'vertical',
+			left: 'left',
+		},
+		xAxis: {
+			type: 'category',
+			data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+		},
+		yAxis: {
+			type: 'value',
+		},
+		series: [
+			{
+				data: [1420, 1032, 1901, 1034, 1290, 1330, 1320],
+				type: 'line',
+				smooth: true,
+			},
+		],
+	});
+	var myChart4 = echarts.init(document.querySelector('.c4'), null, {
+		width: 800,
+		height: 500,
+	});
 	myChart4.setOption({
-    title: {
-    text: '水资源消耗情况',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  legend: {
-    orient: 'vertical',
-    left: 'left'
-  },
-  xAxis: {
-    type: 'category',
-    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  },
-  yAxis: {
-    type: 'value'
-  },
-  series: [
-    {
-      data: [1020, 1132, 1901, 2134, 1290, 1830, 1420],
-      type: 'line',
-      smooth: true
-    }
-  ]
-});
- //#endregion
+		title: {
+			text: '水资源消耗情况',
+			left: 'center',
+		},
+		tooltip: {
+			trigger: 'item',
+		},
+		legend: {
+			orient: 'vertical',
+			left: 'left',
+		},
+		xAxis: {
+			type: 'category',
+			data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+		},
+		yAxis: {
+			type: 'value',
+		},
+		series: [
+			{
+				data: [1020, 1132, 1901, 2134, 1290, 1830, 1420],
+				type: 'line',
+				smooth: true,
+			},
+		],
+	});
+	//#endregion
 });
 onUnmounted(() => {
 	map = null;
@@ -457,10 +467,6 @@ function initMap() {
 	// 创建三维地球场景
 	const map = new mars3d.Map('mars3dContainer', {
 		scene: {
-			center: {
-				lat: 28.267803,
-				lng: 113.061611,
-			},
 			showSun: true,
 			showMoon: true,
 			showSkyBox: true,
@@ -538,7 +544,9 @@ function initMap() {
 	});
 	map.addLayer(graphicLayer);
 	// load事件,必须在load完成前绑定才能监听
-
+	map.on(mars3d.EventType.renderError, function (event) {
+		window.location.reload();
+	});
 	graphicLayer.on(mars3d.EventType.load, function (event) {
 		if (event.layer) {
 			console.log('数据加载完成', event);
@@ -554,6 +562,7 @@ function initMap() {
 	map.addLayer(videoGraphicLayer);
 	addRandomGraphicByCount(videoGraphicLayer, [113.064212, 28.267046, 5]);
 	addRandomGraphic2ByCount(videoGraphicLayer, [113.061906, 28.268769, 5]);
+	//lat: 28.267803,lng: 113.061611,
 	return map;
 }
 function queryGeoJsonData() {}
@@ -563,6 +572,7 @@ function queryTilesetData() {
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
 		maximumMemoryUsage: 64,
+		maximumScreenSpaceError: 16,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
@@ -595,16 +605,11 @@ function queryFloodTilesetData() {
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
 		maximumMemoryUsage: 32,
+    progressiveResolutionHeightFraction: 0.2,
+		maximumScreenSpaceError: 40,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
-		center: {
-			lat: 28.267803,
-			lng: 113.061611,
-			alt: 100,
-			heading: 7,
-			pitch: -29,
-		},
 		position: {
 			alt: 79,
 		},
@@ -632,7 +637,7 @@ function handleSelect(key, keyPath) {
 	isTongShi.value = false;
 	isShadows.value = false;
 	isTable.value = false;
-  isCharts.value = false;
+	isCharts.value = false;
 	map.removeThing(shadows);
 	map.removeThing(floodByGraphic);
 	map.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
@@ -646,9 +651,9 @@ function handleSelect(key, keyPath) {
 	} else if (key == '1') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
-    if (!map.getLayer('碧桂园')) {
+		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
 		}
 		addLayer(threeDTilesLayer);
@@ -656,7 +661,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '3') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -667,11 +672,22 @@ function handleSelect(key, keyPath) {
 	} else if (key == '4') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
 		removeLayer(threeDTilesLayer);
 		map.addThing(floodByGraphic);
 		addLayer(floodTilesLayer);
+		map.flyToExtent(
+			{
+				xmin: 113.0615,
+				xmax: 113.063864,
+				ymin: 28.262816,
+				ymax: 28.273114,
+			},
+			{
+				duration: 2,
+			}
+		);
 		map.viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
 			url: '//data.mars3d.cn/terrain',
 			show: true,
@@ -681,7 +697,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '5') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -691,7 +707,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '6') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -702,7 +718,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '7') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -712,7 +728,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '8') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
-      mapSplit = null;
+			mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -730,19 +746,14 @@ function contrast() {
 				name: '碧桂园一期',
 				type: '3dtiles',
 				url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
-				center: {
-					lat: 28.267803,
-					lng: 113.061611, //113.062522,28.267795
-					alt: 150,
-					heading: 7,
-					pitch: -29,
-				},
 				position: {
 					lat: 28.267795,
 					lng: 113.062522,
 					alt: 35,
 				},
 				preferLeaves: false,
+        progressiveResolutionHeightFraction: 0.2,
+				maximumScreenSpaceError: 40,
 				maximumMemoryUsage: 32,
 				dynamicScreenSpaceError: true,
 				cullWithChildrenBounds: true,
@@ -756,28 +767,34 @@ function contrast() {
 				name: '碧桂园二期',
 				type: '3dtiles',
 				url: 'http://172.30.63.2/d3dt/cs_xljy_2022.06.21/tileset.json',
-				center: {
-					lat: 28.267803,
-					lng: 113.061611, //113.062522,28.267795
-					alt: 150,
-					heading: 7,
-					pitch: -29,
-				},
 				position: {
 					lat: 28.267959,
 					lng: 113.062431,
 					alt: 35,
 				},
 				preferLeaves: false,
+        progressiveResolutionHeightFraction: 0.2,
+				maximumScreenSpaceError: 64,
 				maximumMemoryUsage: 32,
 				dynamicScreenSpaceError: true,
 				cullWithChildrenBounds: true,
-				skipLevelOfDetail: true, //113.061611,28.267803
+				skipLevelOfDetail: true,
 				flyTo: true,
 			},
 		],
 	});
 	map.addControl(mapSplit);
+	map.flyToExtent(
+		{
+			xmin: 113.0608,
+			xmax: 113.063864,
+			ymin: 28.262516,
+			ymax: 28.273114,
+		},
+		{
+			duration: 2,
+		}
+	);
 }
 //#region 量算
 
@@ -1169,6 +1186,7 @@ function addRandomGraphic2ByCount(graphicLayer, position) {
 	});
 	graphicLayer.addGraphic(graphicImg);
 }
+function myFlyTo() {}
 //#region 量算的功能
 // 添加矩形
 const btnDrawExtent = () => {
@@ -1261,7 +1279,7 @@ xhr.send();
 	justify-content: space-between;
 	align-items: center;
 	height: 6vh;
-	background-color: rgba(98,89,44,1);
+	background-color: rgba(98, 89, 44, 1);
 }
 #mars3dContainer {
 	padding: 0;
