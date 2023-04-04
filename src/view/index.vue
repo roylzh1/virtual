@@ -281,7 +281,7 @@ const formState = reactive({
 	minHeight: 0,
 	maxHeight: 0,
 	height: 0,
-	speed: 10,
+	speed: 1,
 });
 const isFlood = ref(false);
 const isStart = ref(true);
@@ -312,6 +312,7 @@ onMounted(() => {
 		const date = event.shadowTime;
 		timeVal.value = date.getHours() * 60 + date.getMinutes();
 	});
+  //#region 图表
 	var myChart1 = echarts.init(document.querySelector('.c1'), null, {
     width: 800,
     height: 500
@@ -348,7 +349,6 @@ onMounted(() => {
     }
   ]
 });
-
   var myChart2 = echarts.init(document.querySelector('.c2'), null, {
     width: 800,
     height: 500
@@ -385,7 +385,6 @@ onMounted(() => {
     }
   ]
 });
-
   var myChart3 = echarts.init(document.querySelector('.c3'), null, {
     width: 800,
     height: 500
@@ -417,7 +416,6 @@ onMounted(() => {
     }
   ]
 });
-
   var myChart4 = echarts.init(document.querySelector('.c4'), null, {
     width: 800,
     height: 500
@@ -449,6 +447,7 @@ onMounted(() => {
     }
   ]
 });
+ //#endregion
 });
 onUnmounted(() => {
 	map = null;
@@ -499,8 +498,8 @@ function initMap() {
 		],
 	});
 	sightline = new mars3d.thing.Sightline({
-		visibleColor: new Cesium.Color(0, 1, 0, 0.4),
-		hiddenColor: new Cesium.Color(1, 0, 0, 0.4),
+		visibleColor: new mars3d.Cesium.Color(0, 1, 0, 0.4),
+		hiddenColor: new mars3d.Cesium.Color(1, 0, 0, 0.4),
 		// depthFailColor: Cesium.Color.fromCssColorString("#db2c8f"),
 	});
 	map.addThing(sightline);
@@ -563,7 +562,7 @@ function queryTilesetData() {
 	const tiles3dLayer = new mars3d.layer.TilesetLayer({
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
-		maximumMemoryUsage: 255,
+		maximumMemoryUsage: 64,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
@@ -578,7 +577,7 @@ function queryTilesetData() {
 			alt: 35,
 		},
 		preferLeaves: false,
-		flyTo: true, //false TODO:交付记得改回来
+		flyTo: false, //false TODO:交付记得改回来
 		shadows: Cesium.ShadowMode.ENABLED,
 	});
 	tiles3dLayer.allowDrillPick = true;
@@ -595,7 +594,7 @@ function queryFloodTilesetData() {
 	const tiles3dLayer = new mars3d.layer.TilesetLayer({
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
-		maximumMemoryUsage: 255,
+		maximumMemoryUsage: 32,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
 		skipLevelOfDetail: true, //113.061611,28.267803
@@ -647,12 +646,17 @@ function handleSelect(key, keyPath) {
 	} else if (key == '1') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
+		}
+    if (!map.getLayer('碧桂园')) {
+			addLayer(threeDTilesLayer);
 		}
 		addLayer(threeDTilesLayer);
 		return;
 	} else if (key == '3') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -663,6 +667,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '4') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
 		}
 		removeLayer(threeDTilesLayer);
 		map.addThing(floodByGraphic);
@@ -676,6 +681,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '5') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -685,6 +691,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '6') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -695,6 +702,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '7') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -704,6 +712,7 @@ function handleSelect(key, keyPath) {
 	} else if (key == '8') {
 		if (mapSplit != null) {
 			map.removeControl(mapSplit, true);
+      mapSplit = null;
 		}
 		if (!map.getLayer('碧桂园')) {
 			addLayer(threeDTilesLayer);
@@ -734,7 +743,7 @@ function contrast() {
 					alt: 35,
 				},
 				preferLeaves: false,
-				maximumMemoryUsage: 125,
+				maximumMemoryUsage: 32,
 				dynamicScreenSpaceError: true,
 				cullWithChildrenBounds: true,
 				skipLevelOfDetail: true,
@@ -760,7 +769,7 @@ function contrast() {
 					alt: 35,
 				},
 				preferLeaves: false,
-				maximumMemoryUsage: 125,
+				maximumMemoryUsage: 32,
 				dynamicScreenSpaceError: true,
 				cullWithChildrenBounds: true,
 				skipLevelOfDetail: true, //113.061611,28.267803
@@ -995,7 +1004,7 @@ function mapOnChangeElse(val) {
 //#region 通视
 //清除通视分析
 function mapClearDraw() {
-	floodByMaterial.clear();
+	floodByGraphic.clear();
 	map.graphicLayer.clear();
 }
 //画圆通视分析
