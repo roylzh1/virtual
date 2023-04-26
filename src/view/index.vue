@@ -45,7 +45,7 @@
 			<el-container>
 				<!--导航栏-->
 				<el-header class="header">
-					<el-tag effect="dark" size="large" round>欢迎回来: roy</el-tag>
+					<el-tag effect="dark" size="large" round>欢迎回来!</el-tag>
 					<div class="title">虚拟湘龙花园</div>
 				</el-header>
 				<!--地图-->
@@ -605,7 +605,7 @@ function queryFloodTilesetData() {
 		name: '碧桂园',
 		url: 'http://172.30.63.2/d3dt/cs_xljy_2022.03.15/tileset.json',
 		maximumMemoryUsage: 32,
-    progressiveResolutionHeightFraction: 0.2,
+		progressiveResolutionHeightFraction: 0.2,
 		maximumScreenSpaceError: 40,
 		dynamicScreenSpaceError: true,
 		cullWithChildrenBounds: true,
@@ -752,7 +752,7 @@ function contrast() {
 					alt: 35,
 				},
 				preferLeaves: false,
-        progressiveResolutionHeightFraction: 0.2,
+				progressiveResolutionHeightFraction: 0.2,
 				maximumScreenSpaceError: 40,
 				maximumMemoryUsage: 32,
 				dynamicScreenSpaceError: true,
@@ -773,7 +773,7 @@ function contrast() {
 					alt: 35,
 				},
 				preferLeaves: false,
-        progressiveResolutionHeightFraction: 0.2,
+				progressiveResolutionHeightFraction: 0.2,
 				maximumScreenSpaceError: 64,
 				maximumMemoryUsage: 32,
 				dynamicScreenSpaceError: true,
@@ -1272,6 +1272,7 @@ xhr.send();
 	font-size: 30px;
 	font-weight: 700;
 	font-family: 'KaiTi';
+  letter-spacing: 2px;
 }
 .header {
 	display: flex;
@@ -1279,7 +1280,7 @@ xhr.send();
 	justify-content: space-between;
 	align-items: center;
 	height: 6vh;
-	background-color: rgba(98, 89, 44, 1);
+	background: linear-gradient(to bottom, #c0d09d, #9bb853);
 }
 #mars3dContainer {
 	padding: 0;
